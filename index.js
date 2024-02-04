@@ -77,6 +77,7 @@ async function run() {
     };
     // Function to convert a product name to a slug
     // function product_name_to_slug(product_name) {
+    //   console.log(product_name)
     //   let slug = product_name.replace(/[^a-zA-Z0-9-]+/g, "-");
     //   slug = slug.replace(/-+/g, "-");
     //   slug = slug.replace(/^-+|-+$/g, "");
@@ -110,19 +111,17 @@ async function run() {
 
     // app.get("/update-product-slugs", async (req, res) => {
     //   try {
-    //     const query = { status: "publish", stock_status: "instock" };
-    //     const cursor = productCollection
-    //       .find(query)
-    //       .sort({ date_created: -1 })
-    //       .project(projection);
+    //     const query = {};
+    //     const cursor = productCollection.find(query);
     //     const products = await cursor.toArray();
 
     //     for (const product of products) {
     //       const newSlug = product_name_to_slug(product.name);
-    //       await productCollection.updateOne(
-    //         { _id: product._id },
-    //         { $set: { slug: newSlug } }
-    //       );
+    //       // await productCollection.updateOne(
+    //       //   { _id: product._id },
+    //       //   { $set: { slug: newSlug } }
+    //       // );
+    //       console.log(newSlug);
     //     }
 
     //     return res.json({ message: "Product slugs updated successfully" });
@@ -147,7 +146,12 @@ async function run() {
         for (const product of products) {
           await productCollection.updateOne(
             { _id: product._id },
-            { $set: { on_sale: false, sale_price: Math.floor(product.regular_price / 2 )} }
+            {
+              $set: {
+                on_sale: false,
+                sale_price: Math.floor(product.regular_price / 2),
+              },
+            }
           );
         }
 
