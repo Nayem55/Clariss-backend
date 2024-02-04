@@ -76,13 +76,13 @@ async function run() {
       meta_description: 1,
     };
     // Function to convert a product name to a slug
-    // function product_name_to_slug(product_name) {
-    //   console.log(product_name)
-    //   let slug = product_name.replace(/[^a-zA-Z0-9-]+/g, "-");
-    //   slug = slug.replace(/-+/g, "-");
-    //   slug = slug.replace(/^-+|-+$/g, "");
-    //   return slug;
-    // }
+    function product_name_to_slug(product_name) {
+      console.log(product_name)
+      let slug = product_name.replace(/[^a-zA-Z0-9-]+/g, "-");
+      slug = slug.replace(/-+/g, "-");
+      slug = slug.replace(/^-+|-+$/g, "");
+      return slug;
+    }
 
     // insert products
     // app.get("/insert", async (req, res) => {
@@ -109,28 +109,30 @@ async function run() {
       console.log(result.length);
     });
 
-    // app.get("/update-product-slugs", async (req, res) => {
-    //   try {
-    //     const query = {};
-    //     const cursor = productCollection.find(query);
-    //     const products = await cursor.toArray();
+    app.get("/update-product-slugs", async (req, res) => {
+      try {
+        const query = {};
+        const cursor = productCollection.find(query);
+        const products = await cursor.toArray();
 
-    //     for (const product of products) {
-    //       const newSlug = product_name_to_slug(product.name);
-    //       // await productCollection.updateOne(
-    //       //   { _id: product._id },
-    //       //   { $set: { slug: newSlug } }
-    //       // );
-    //       console.log(newSlug);
-    //     }
+        for (const product of products) {
+          const newSlug = product_name_to_slug(product.name);
+          await productCollection.updateOne(
+            { _id: product._id },
+            { $set: { slug: newSlug?.toLowerCase() } }
+          );
+          console.log(newSlug);
+        }
 
-    //     return res.json({ message: "Product slugs updated successfully" });
-    //   } catch (error) {
-    //     return res
-    //       .status(500)
-    //       .json({ error: "An error occurred while updating product slugs" });
-    //   }
-    // });
+        return res.json({ message: "Product slugs updated successfully" });
+      } catch (error) {
+        return res
+          .status(500)
+          .json({ error: "An error occurred while updating product slugs" });
+      }
+    });
+
+    
     app.get("/updateSaleStatus", async (req, res) => {
       try {
         const query = {
