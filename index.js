@@ -99,7 +99,7 @@ async function run() {
 
     // get products
     app.get("/products", async (req, res) => {
-      const query = { status: "publish", stock_status: "instock" };
+      const query = { status: "publish" };
       const cursor = productCollection
         .find(query)
         .sort({ date_created: -1 })
@@ -171,7 +171,6 @@ async function run() {
       const page = req.query.page;
       const query = {
         status: "publish",
-        stock_status: "instock",
       };
       const cursor = productCollection
         .find(query)
@@ -187,7 +186,6 @@ async function run() {
     app.get("/shopProductCount", async (req, res) => {
       const query = {
         status: "publish",
-        stock_status: "instock",
       };
       const count = await productCollection.countDocuments(query);
       res.send({ count });
@@ -274,7 +272,7 @@ async function run() {
 
     // get new arrivals
     app.get("/newArrivals", async (req, res) => {
-      const query = { status: "publish", stock_status: "instock" };
+      const query = { status: "publish" };
       const cursor = productCollection
         .find(query)
         .sort({ date_created: -1 })
@@ -298,7 +296,6 @@ async function run() {
       const name = req.query.name;
       const query = {
         status: "publish",
-        stock_status: "instock",
         "tags.name": {
           $regex: new RegExp(name, "i"), // "i" for case-insensitive
         },
@@ -333,7 +330,6 @@ async function run() {
       console.log(name);
       const query = {
         status: "publish",
-        stock_status: "instock",
         "categories.name": {
           $regex: new RegExp(name, "i"), // "i" for case-insensitive
         },
@@ -349,7 +345,6 @@ async function run() {
       console.log(name);
       const query = {
         status: "publish",
-        stock_status: "instock",
         "categories.name": {
           $regex: new RegExp(name, "i"), // "i" for case-insensitive
         },
@@ -426,7 +421,6 @@ async function run() {
       console.log(searchText);
       const query = {
         status: "publish",
-        stock_status: "instock",
         name: {
           $regex: searchText,
           $options: "i", // "i" for case-insensitive
