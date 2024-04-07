@@ -74,6 +74,7 @@ async function run() {
       reviews: 1,
       variations: 1,
       meta_description: 1,
+      priority: 1,
     };
     // Function to convert a product name to a slug
     function product_name_to_slug(product_name) {
