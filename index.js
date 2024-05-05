@@ -76,6 +76,21 @@ async function run() {
       meta_description: 1,
       priority: 1,
     };
+    const projection4 = {
+      _id: 0,
+      name: 1,
+      slug: 1,
+      description: 1,
+      images: 1,
+      stock_status:1,
+      regular_price: 1,
+      sku: 1,
+      short_description: 1,
+      categories: 1,
+      meta_description: 1,
+      attributes: 1,
+    };
+
     // Function to convert a product name to a slug
     function product_name_to_slug(product_name) {
       console.log(product_name)
@@ -105,6 +120,16 @@ async function run() {
         .find(query)
         .sort({ date_created: -1 })
         .project(projection);
+      const result = await cursor.toArray();
+      res.send(result);
+      console.log(result.length);
+    });
+    app.get("/getAllProducts", async (req, res) => {
+      const query = { status: "publish" };
+      const cursor = productCollection
+        .find(query)
+        .sort({ date_created: -1 })
+        .project(projection4);
       const result = await cursor.toArray();
       res.send(result);
       console.log(result.length);
@@ -568,8 +593,12 @@ async function run() {
     // get user order list
     app.get("/userOrder/:ph", async (req, res) => {
       const ph = req.params.ph;
-      console.log(ph);
-      const query = { "billing.phone": ph };
+      const query = {
+        $or: [
+          { "billing.phone": ph },
+          { "billing.phone": ph.substring(3) }
+        ]
+      };
       const cursor = orderCollection.find(query).sort({ order_date: -1 });
       const result = await cursor.toArray();
       res.send(result);
