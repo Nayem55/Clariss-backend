@@ -75,6 +75,7 @@ async function run() {
       variations: 1,
       meta_description: 1,
       priority: 1,
+      brand: 1,
     };
     const projection4 = {
       _id: 0,
@@ -82,7 +83,7 @@ async function run() {
       slug: 1,
       description: 1,
       images: 1,
-      stock_status:1,
+      stock_status: 1,
       regular_price: 1,
       sku: 1,
       short_description: 1,
@@ -93,12 +94,38 @@ async function run() {
 
     // Function to convert a product name to a slug
     function product_name_to_slug(product_name) {
-      console.log(product_name)
+      console.log(product_name);
       let slug = product_name.replace(/[^a-zA-Z0-9-]+/g, "-");
       slug = slug.replace(/-+/g, "-");
       slug = slug.replace(/^-+|-+$/g, "");
       return slug;
     }
+
+    // Add field to all products
+    app.patch("/addFieldToAllProducts", async (req, res) => {
+      const brandName = "Clariss"; // You can replace this with req.body.brand if dynamic
+
+      if (!brandName) {
+        return res.status(400).send({ message: "Brand name is required." });
+      }
+
+      try {
+        const result = await productCollection.updateMany(
+          {}, // Filter: only products with status 'publish'
+          { $set: { brand: brandName } } // Update: set the brand field to the given brand name
+        );
+
+        res.send({
+          message: `${result.modifiedCount} products updated with brand: ${brandName}`,
+        });
+        console.log(
+          `${result.modifiedCount} products updated with brand: ${brandName}`
+        );
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to update products." });
+      }
+    });
 
     // insert products
     // app.get("/insert", async (req, res) => {
@@ -158,7 +185,6 @@ async function run() {
       }
     });
 
-    
     app.get("/updateSaleStatus", async (req, res) => {
       try {
         const query = {
@@ -594,10 +620,7 @@ async function run() {
     app.get("/userOrder/:ph", async (req, res) => {
       const ph = req.params.ph;
       const query = {
-        $or: [
-          { "billing.phone": ph },
-          { "billing.phone": ph.substring(3) }
-        ]
+        $or: [{ "billing.phone": ph }, { "billing.phone": ph.substring(3) }],
       };
       const cursor = orderCollection.find(query).sort({ order_date: -1 });
       const result = await cursor.toArray();
