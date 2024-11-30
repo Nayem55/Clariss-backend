@@ -91,6 +91,10 @@ async function run() {
       meta_description: 1,
       attributes: 1,
     };
+    const projection5 = {
+      _id: 0,
+      id: 1,
+    };
 
     // Function to convert a product name to a slug
     function product_name_to_slug(product_name) {
@@ -317,6 +321,33 @@ async function run() {
       const count = await orderCollection.estimatedDocumentCount();
       res.send({ count });
     });
+
+    app.get("/last-order-id", async (req, res) => {
+      try {
+        // Use find() to get all orders, then sort to get the most recent one
+        const lastOrder = await orderCollection
+          .find() // Use find() to get all orders
+          .sort({ order_date: -1 })
+          .limit(1)
+          .project(projection5)
+          .toArray();
+
+        if (lastOrder.length === 0) {
+          return res.send([
+            {
+              "id": 1000
+            }
+          ])
+        }
+
+        // Send the last order's ID
+        res.send(lastOrder); // Access the first (and only) element in the array
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
     app.get("/reviewCount", async (req, res) => {
       const count = await reviewCollection.estimatedDocumentCount();
       res.send({ count });
