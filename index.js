@@ -339,9 +339,8 @@ async function run() {
             }
           ])
         }
+        res.send(lastOrder);
 
-        // Send the last order's ID
-        res.send(lastOrder); // Access the first (and only) element in the array
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
