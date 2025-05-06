@@ -676,7 +676,7 @@ async function run() {
     app.get("/order/:id", async (req, res) => {
       const id = req.params.id;
       const product = await orderCollection.findOne({
-        _id: ObjectId(id),
+        _id: new ObjectId(id),
       });
       res.send(product);
     });
@@ -684,7 +684,7 @@ async function run() {
     app.put("/editOrder/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;
-      const filter = { _id: ObjectId(id),};
+      const filter = { _id: new ObjectId(id),};
       const options = { upsert: true };
       const updatedDoc = {
         $set: data,
@@ -715,7 +715,7 @@ async function run() {
     // delete order
     app.delete("/deleteOrder/:id", async (req, res) => {
       const id = req.params.id;
-      const filter = { _id: ObjectId(id),};
+      const filter = { _id: new ObjectId(id),};
       const result = await orderCollection.deleteOne(filter);
       res.send(result);
     });
