@@ -11,6 +11,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+    "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "@woocommerce/woocommerce-rest-api": "^1.0.1",
     "body-parser": "^1.20.2",
