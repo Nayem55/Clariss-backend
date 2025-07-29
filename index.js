@@ -614,57 +614,28 @@ async function run() {
       res.send(orders);
       console.log(orders.length);
     });
-    // get admin dashboard sorted order
-    app.get("/sortOrders", async (req, res) => {
-      const page = parseInt(req.query.page);
-      const startDate = req.query.startDate;
-      const endDate = req.query.endDate;
-      const query = {
-        order_date: {
-          $gte: startDate,
-          $lte: endDate,
-        },
-        order_status: "New order",
-      };
-      let orders;
-      orders = await orderCollection
-        .find(query)
-        .sort({ order_date: -1 })
-        .toArray();
-      // if (page) {
-      //   orders = await orderCollection
-      //     .find(query)
-      //     .sort({ order_date: -1 })
-      //     .skip(page * 50)
-      //     .limit(50)
-      //     .toArray();
-      // } else {
-      //   orders = await orderCollection
-      //     .find(query)
-      //     .sort({ order_date: -1 })
-      //     .limit(50)
-      //     .toArray();
-      // }
-      res.send(orders);
-      console.log(orders.length);
-    });
-    // get admin dashboard order total
     app.get("/orders/total", async (req, res) => {
-      const query = {}; // You may add filters to this query if needed
+      const platform = req.query.platform; // Add platform parameter
+      const query = {};
+
+      if (platform) {
+        query.platform = platform;
+      }
+
       const orders = await orderCollection.find(query).toArray();
 
-      // Calculate the total value of all orders
       const totalValue = orders.reduce((total, order) => {
-        return total + parseInt(order.total); // Assuming each order has a 'totalValue' property
+        return total + parseInt(order.total);
       }, 0);
 
       res.send({ totalValue });
     });
-    // get admin dashboard sorted order
+    // get admin dashboard sorted order - Add platform filter
     app.get("/sortOrders", async (req, res) => {
-      const page = parseInt(req.query.page);
       const startDate = req.query.startDate;
       const endDate = req.query.endDate;
+      const platform = req.query.platform; // Add platform parameter
+
       const query = {
         order_date: {
           $gte: startDate,
@@ -672,27 +643,17 @@ async function run() {
         },
         order_status: "New order",
       };
-      let orders;
-      orders = await orderCollection
+
+      if (platform) {
+        query.platform = platform;
+      }
+
+      const orders = await orderCollection
         .find(query)
         .sort({ order_date: -1 })
         .toArray();
-      // if (page) {
-      //   orders = await orderCollection
-      //     .find(query)
-      //     .sort({ order_date: -1 })
-      //     .skip(page * 50)
-      //     .limit(50)
-      //     .toArray();
-      // } else {
-      //   orders = await orderCollection
-      //     .find(query)
-      //     .sort({ order_date: -1 })
-      //     .limit(50)
-      //     .toArray();
-      // }
+
       res.send(orders);
-      console.log(orders.length);
     });
     // get user order list
     app.get("/userOrder/:ph", async (req, res) => {
