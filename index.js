@@ -335,12 +335,11 @@ async function run() {
         if (lastOrder.length === 0) {
           return res.send([
             {
-              "id": 1000
-            }
-          ])
+              id: 1000,
+            },
+          ]);
         }
         res.send(lastOrder);
-
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
@@ -625,27 +624,76 @@ async function run() {
           $gte: startDate,
           $lte: endDate,
         },
-        order_status: "Delivered",
+        order_status: "New order",
       };
       let orders;
-      if (page) {
-        orders = await orderCollection
-          .find(query)
-          .sort({ order_date: -1 })
-          .skip(page * 50)
-          .limit(50)
-          .toArray();
-      } else {
-        orders = await orderCollection
-          .find(query)
-          .sort({ order_date: -1 })
-          .limit(50)
-          .toArray();
-      }
+      orders = await orderCollection
+        .find(query)
+        .sort({ order_date: -1 })
+        .toArray();
+      // if (page) {
+      //   orders = await orderCollection
+      //     .find(query)
+      //     .sort({ order_date: -1 })
+      //     .skip(page * 50)
+      //     .limit(50)
+      //     .toArray();
+      // } else {
+      //   orders = await orderCollection
+      //     .find(query)
+      //     .sort({ order_date: -1 })
+      //     .limit(50)
+      //     .toArray();
+      // }
       res.send(orders);
       console.log(orders.length);
     });
+    // get admin dashboard order total
+    app.get("/orders/total", async (req, res) => {
+      const query = {}; // You may add filters to this query if needed
+      const orders = await orderCollection.find(query).toArray();
 
+      // Calculate the total value of all orders
+      const totalValue = orders.reduce((total, order) => {
+        return total + parseInt(order.total); // Assuming each order has a 'totalValue' property
+      }, 0);
+
+      res.send({ totalValue });
+    });
+    // get admin dashboard sorted order
+    app.get("/sortOrders", async (req, res) => {
+      const page = parseInt(req.query.page);
+      const startDate = req.query.startDate;
+      const endDate = req.query.endDate;
+      const query = {
+        order_date: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+        order_status: "New order",
+      };
+      let orders;
+      orders = await orderCollection
+        .find(query)
+        .sort({ order_date: -1 })
+        .toArray();
+      // if (page) {
+      //   orders = await orderCollection
+      //     .find(query)
+      //     .sort({ order_date: -1 })
+      //     .skip(page * 50)
+      //     .limit(50)
+      //     .toArray();
+      // } else {
+      //   orders = await orderCollection
+      //     .find(query)
+      //     .sort({ order_date: -1 })
+      //     .limit(50)
+      //     .toArray();
+      // }
+      res.send(orders);
+      console.log(orders.length);
+    });
     // get user order list
     app.get("/userOrder/:ph", async (req, res) => {
       const ph = req.params.ph;
@@ -684,7 +732,7 @@ async function run() {
     app.put("/editOrder/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;
-      const filter = { _id: new ObjectId(id),};
+      const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updatedDoc = {
         $set: data,
@@ -715,7 +763,7 @@ async function run() {
     // delete order
     app.delete("/deleteOrder/:id", async (req, res) => {
       const id = req.params.id;
-      const filter = { _id: new ObjectId(id),};
+      const filter = { _id: new ObjectId(id) };
       const result = await orderCollection.deleteOne(filter);
       res.send(result);
     });
