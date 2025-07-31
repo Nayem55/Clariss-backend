@@ -923,12 +923,30 @@ async function run() {
       console.log(blogs.length);
     });
     // get reviews
+    // app.get("/reviews", async (req, res) => {
+    //   const query = { status: "approved" };
+    //   const reviews = await reviewCollection.find(query).toArray();
+    //   res.send(reviews);
+    //   console.log(reviews.length);
+    // });
     app.get("/reviews", async (req, res) => {
-      const query = { status: "approved" };
-      const reviews = await reviewCollection.find(query).toArray();
-      res.send(reviews);
-      console.log(reviews.length);
+      try {
+        const { productId } = req.query;
+        const query = {
+          status: "approved",
+          product_id:productId
+        };
+        const reviews = await reviewCollection.find(query).toArray();
+        res.send(reviews);
+        console.log(
+          `Returned ${reviews.length} reviews for productId: ${productId}`
+        );
+      } catch (error) {
+        console.error("Failed to fetch reviews:", error);
+        res.status(500).send({ error: "Internal Server Error" });
+      }
     });
+
     // get all reviews
     app.get("/allReviews", async (req, res) => {
       const page = parseInt(req.query.page);
