@@ -51,6 +51,8 @@ async function run() {
     const blogCollection = client.db("Clariss").collection("blogs");
     const reviewCollection = client.db("Clariss").collection("reviews");
     const categoryCollection = client.db("Clariss").collection("categories");
+    const sliderCollection = client.db("Clariss").collection("sliders");
+    
 
     const projection = {
       _id: 1,
@@ -998,6 +1000,46 @@ async function run() {
       const filter = { _id: new ObjectId(id) };
       const result = await reviewCollection.deleteOne(filter);
       res.send(result);
+    });
+
+
+    // ✔ slider releted apis here
+
+
+  // post many slider
+  app.post("/add-slider-all", async (req, res) => {
+  const banners = req.body;
+  console.log(banners);
+  const result = await sliderCollection.insertMany(banners);
+  res.send(result);
+});
+
+// post one slider
+app.post("/add-slider", async (req, res) => {
+      const { name, desktopImg, mobileImg, order, status, link, startTime, endTime } = req.body;
+
+      const newSlider = {
+        name,
+        desktopImg,
+        mobileImg,
+        order,
+        status,
+        link,
+        startTime,
+        endTime
+      };
+
+      const result = await sliderCollection.insertOne(newSlider);
+      res.send(result);
+    });
+
+
+    // Get all sliders
+    app.get("/get-sliders", async (req, res) => {
+      const result = await sliderCollection.find().toArray();
+      res.send(result);
+      console.log(result);
+      
     });
 
     // Express route to delete a field from all documents
