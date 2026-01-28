@@ -51,6 +51,7 @@ async function run() {
     const blogCollection = client.db("Clariss").collection("blogs");
     const reviewCollection = client.db("Clariss").collection("reviews");
     const categoryCollection = client.db("Clariss").collection("categories");
+    const sliderCollection = client.db("Clariss").collection("sliders");
 
     const projection = {
       _id: 1,
@@ -934,7 +935,7 @@ async function run() {
         const { productId } = req.query;
         const query = {
           status: "approved",
-          product_id:productId
+          product_id: productId,
         };
         const reviews = await reviewCollection.find(query).toArray();
         res.send(reviews);
@@ -997,6 +998,88 @@ async function run() {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const result = await reviewCollection.deleteOne(filter);
+      res.send(result);
+    });
+
+    // ✔ slider releted apis here
+
+    // post many slider
+    app.post("/add-slider-all", async (req, res) => {
+      const banners = req.body;
+      // console.log(banners);
+      const result = await sliderCollection.insertMany(banners);
+      res.send(result);
+    });
+
+    // post one slider
+    app.post("/add-slider", async (req, res) => {
+      const {
+        name,
+        desktopImg,
+        mobileImg,
+        order,
+        status,
+        link,
+        startTime,
+        endTime,
+      } = req.body;
+
+      const newSlider = {
+        name,
+        desktopImg,
+        mobileImg,
+        order,
+        status,
+        link,
+        startTime,
+        endTime,
+      };
+
+      const result = await sliderCollection.insertOne(newSlider);
+      res.send(result);
+    });
+
+    // Get all sliders
+    app.get("/sliders", async (req, res) => {
+      const result = await sliderCollection.find().toArray();
+      res.send(result);
+      // console.log(result);
+    });
+
+    // Get a specific slider by ID
+    app.get("/get-slider/:id", async (req, res) => {
+      const { id } = req.params;
+
+      const result = await sliderCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    // Update a specific slider by ID
+    app.put("/update-slider/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const { _id, ...rest } = req.body;
+
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: rest,
+        };
+
+        const result = await sliderCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Update failed" });
+      }
+    });
+
+    // Delete a specific slider by ID
+    app.delete("/delete-slider/:id", async (req, res) => {
+      const { id } = req.params;
+
+      const result = await sliderCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
       res.send(result);
     });
 
