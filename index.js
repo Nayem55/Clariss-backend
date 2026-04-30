@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+require("node:dns/promises").setServers(["1.1.1.1", "8.8.8.8"]);
 
 require("dotenv").config();
 const port = process.env.PORT || 5000;
@@ -117,14 +118,14 @@ async function run() {
       try {
         const result = await productCollection.updateMany(
           {}, // Filter: only products with status 'publish'
-          { $set: { brand: brandName } } // Update: set the brand field to the given brand name
+          { $set: { brand: brandName } }, // Update: set the brand field to the given brand name
         );
 
         res.send({
           message: `${result.modifiedCount} products updated with brand: ${brandName}`,
         });
         console.log(
-          `${result.modifiedCount} products updated with brand: ${brandName}`
+          `${result.modifiedCount} products updated with brand: ${brandName}`,
         );
       } catch (error) {
         console.error(error);
@@ -177,7 +178,7 @@ async function run() {
           const newSlug = product_name_to_slug(product.name);
           await productCollection.updateOne(
             { _id: product._id },
-            { $set: { slug: newSlug?.toLowerCase() } }
+            { $set: { slug: newSlug?.toLowerCase() } },
           );
           console.log(newSlug);
         }
@@ -210,7 +211,7 @@ async function run() {
                 on_sale: false,
                 sale_price: Math.floor(product.regular_price / 2),
               },
-            }
+            },
           );
         }
 
@@ -311,6 +312,252 @@ async function run() {
       });
       res.send(product);
     });
+
+    // New api start for bulk - esa
+
+    app.get("/Allproducts", async (req, res) => {
+      const page = parseInt(req.query.page);
+      const query = {};
+      let products;
+      if (page) {
+        products = await productCollection
+          .find(query)
+          .sort({ date_created: -1 })
+          .skip(page * 50)
+          .limit(50)
+          .toArray();
+      } else {
+        products = await productCollection
+          .find(query)
+          .sort({ date_created: -1 })
+          .limit(50)
+          .toArray();
+      }
+      res.send(products);
+      console.log(products.length);
+    });
+
+    //get amount of data
+    app.get("/productCount", async (req, res) => {
+      const count = await productCollection.estimatedDocumentCount();
+      res.send({ count });
+    });
+
+    app.get("/adminProductsFiltered", async (req, res) => {
+      try {
+        const page = Math.max(parseInt(req.query.page || "0", 10), 0);
+        const limit = Math.max(parseInt(req.query.limit || "50", 10), 1);
+
+        const search = String(req.query.search || "").trim();
+        const categories = String(req.query.categories || "").trim();
+        const brands = String(req.query.brands || "").trim();
+        const stockStatuses = String(req.query.stockStatuses || "").trim();
+        const saleStatuses = String(req.query.saleStatuses || "").trim();
+
+        const andConditions = [];
+
+        if (search) {
+          andConditions.push({
+            $or: [
+              { name: { $regex: search, $options: "i" } },
+              { slug: { $regex: search, $options: "i" } },
+              { sku: { $regex: search, $options: "i" } },
+            ],
+          });
+        }
+
+        if (categories) {
+          const categoryList = categories
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+          if (categoryList.length) {
+            andConditions.push({
+              $or: categoryList.map((cat) => ({
+                "categories.name": { $regex: new RegExp(cat, "i") },
+              })),
+            });
+          }
+        }
+
+        if (brands) {
+          const brandList = brands
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+          if (brandList.length) {
+            andConditions.push({
+              $or: brandList.map((brand) => ({
+                brand: { $regex: new RegExp(`^${brand}$`, "i") },
+              })),
+            });
+          }
+        }
+
+        if (stockStatuses) {
+          const stockList = stockStatuses
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+          const stockConditions = [];
+
+          if (stockList.includes("instock")) {
+            stockConditions.push({
+              $or: [
+                { stock_status: "instock" },
+                { stock_status: "in stock" },
+                { stock_status: 1 },
+                { stock_status: "1" },
+                { stock_status: true },
+                { stock_status: "true" },
+              ],
+            });
+          }
+
+          if (stockList.includes("outofstock")) {
+            stockConditions.push({
+              $or: [
+                { stock_status: "outofstock" },
+                { stock_status: "out of stock" },
+                { stock_status: 0 },
+                { stock_status: "0" },
+                { stock_status: false },
+                { stock_status: "false" },
+              ],
+            });
+          }
+
+          if (stockConditions.length) {
+            andConditions.push({ $or: stockConditions });
+          }
+        }
+
+        if (saleStatuses) {
+          const saleList = saleStatuses
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+          const saleConditions = [];
+
+          if (saleList.includes("true")) {
+            saleConditions.push({
+              $or: [{ on_sale: true }, { on_sale: "true" }],
+            });
+          }
+
+          if (saleList.includes("false")) {
+            saleConditions.push({
+              $or: [
+                { on_sale: false },
+                { on_sale: "false" },
+                { on_sale: { $exists: false } },
+              ],
+            });
+          }
+
+          if (saleConditions.length) {
+            andConditions.push({ $or: saleConditions });
+          }
+        }
+
+        const query = andConditions.length ? { $and: andConditions } : {};
+
+        const totalCount = await productCollection.countDocuments(query);
+
+        const products = await productCollection
+          .find(query)
+          .sort({ date_created: -1 })
+          .skip(page * limit)
+          .limit(limit)
+          .toArray();
+
+        res.send({
+          products,
+          totalCount,
+          currentPage: page,
+          totalPages: Math.ceil(totalCount / limit),
+        });
+      } catch (error) {
+        console.error("adminProductsFiltered error:", error);
+        res.status(500).send({
+          message: "Failed to fetch filtered products",
+          error: error.message,
+        });
+      }
+    });
+
+    // edit product
+    app.put("/editProduct/:id", async (req, res) => {
+      const id = req.params.id;
+      const data = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: data,
+      };
+      const result = await productCollection.updateOne(
+        filter,
+        updatedDoc,
+        options,
+      );
+      res.send(result);
+    });
+
+    // delete product
+    app.delete("/deleteProduct/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const result = await productCollection.deleteOne(filter);
+      res.send(result);
+    });
+
+    app.get("/adminBrands", async (req, res) => {
+      try {
+        const manualBrands = [
+          "Clariss",
+          "N/A",
+          // "armaf",
+          // "armaf beauty",
+          // "flormar",
+          // "eby",
+          // "lattafa",
+          // "clariss",
+          // "lear shot",
+        ];
+
+        const dbBrands = await productCollection.distinct("brand", {
+          brand: { $exists: true, $ne: "" },
+        });
+
+        const brands = Array.from(
+          new Set(
+            [...manualBrands, ...dbBrands]
+              .map((brand) =>
+                String(brand || "")
+                  .trim()
+                  .toLowerCase()
+                  .replace(/\s+/g, " "),
+              )
+              .filter(Boolean),
+          ),
+        ).sort((a, b) => a.localeCompare(b));
+
+        res.send({ brands });
+      } catch (error) {
+        console.error("adminBrands error:", error);
+        res.status(500).send({
+          message: "Failed to fetch brands",
+          error: error.message,
+        });
+      }
+    });
+
+    // New api end for bulk - esa
 
     //get amount of data
     app.get("/productCount", async (req, res) => {
@@ -473,7 +720,7 @@ async function run() {
       const result = await productCollection.updateOne(
         filter,
         updatedDoc,
-        options
+        options,
       );
       res.send(result);
     });
@@ -702,7 +949,7 @@ async function run() {
       const result = await orderCollection.updateOne(
         filter,
         updatedDoc,
-        options
+        options,
       );
       res.send(result);
     });
@@ -718,7 +965,7 @@ async function run() {
       const result = await userCollection.updateOne(
         filter,
         updatedDoc,
-        options
+        options,
       );
       res.send(result);
     });
@@ -856,7 +1103,7 @@ async function run() {
       const result = await couponCollection.updateOne(
         filter,
         updatedDoc,
-        options
+        options,
       );
       res.send(result);
     });
@@ -903,7 +1150,7 @@ async function run() {
       const result = await blogCollection.updateOne(
         filter,
         updatedDoc,
-        options
+        options,
       );
       res.send(result);
     });
@@ -940,7 +1187,7 @@ async function run() {
         const reviews = await reviewCollection.find(query).toArray();
         res.send(reviews);
         console.log(
-          `Returned ${reviews.length} reviews for productId: ${productId}`
+          `Returned ${reviews.length} reviews for productId: ${productId}`,
         );
       } catch (error) {
         console.error("Failed to fetch reviews:", error);
@@ -988,7 +1235,7 @@ async function run() {
       const result = await reviewCollection.updateOne(
         filter,
         updatedDoc,
-        options
+        options,
       );
       res.send(result);
     });
